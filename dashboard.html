@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My-Vinancial - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Verifikasi Sesi Login -->
+    <script>
+        if (!localStorage.getItem('currentUser')) {
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <!-- Header Top Bar -->
+    <div class="top-bar">
+        <h1>My-Vinancial</h1>
+        <div class="user-info">
+            Halo, <strong id="logged-user">Muhammad Abdullah Davino</strong> | 
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <!-- Filter Arsip Bulan -->
+        <div class="card">
+            <div class="filter-bar">
+                <span>📁 Pilih Arsip Bulan:</span>
+                <select id="filter-month" onchange="renderAll()">
+                    <option value="0">Januari</option>
+                    <option value="1">Februari</option>
+                    <option value="2">Maret</option>
+                    <option value="3">April</option>
+                    <option value="4">Mei</option>
+                    <option value="5">Juni</option>
+                    <option value="6">Juli</option>
+                    <option value="7">Agustus</option>
+                    <option value="8">September</option>
+                    <option value="9">Oktober</option>
+                    <option value="10">November</option>
+                    <option value="11">Desember</option>
+                </select>
+                <select id="filter-year" onchange="renderAll()">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Daftar Target Barang -->
+        <div class="card">
+            <div class="card-title">🎯 Daftar Target Barang</div>
+            <form id="target-form" class="form-inline" onsubmit="addTarget(event)">
+                <input type="text" id="target-name" placeholder="Nama Barang Target" required>
+                <input type="number" id="target-price" placeholder="Estimasi Harga (Rp)" required>
+                <input type="date" id="target-date" required>
+                <button type="submit" class="btn-success">+ Tambah Target</button>
+            </form>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Status</th>
+                        <th>Nama Barang Target</th>
+                        <th>Estimasi Harga</th>
+                        <th>Target Tanggal</th>
+                        <th style="width: 80px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="target-table-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Ringkasan Saldo -->
+        <div class="card">
+            <div class="card-title" id="summary-title">Ringkasan Saldo</div>
+            <p style="margin-bottom: 6px;">Pemasukan Bulan Ini: <strong class="text-masuk" id="sum-pemasukan">Rp 0,00</strong></p>
+            <p style="margin-bottom: 6px;">Pengeluaran Bulan Ini: <strong class="text-keluar" id="sum-pengeluaran">Rp 0,00</strong></p>
+            <p>Total Saldo Bersih: <strong id="sum-total">Rp 0,00</strong></p>
+        </div>
+
+        <!-- Laporan Grafik -->
+        <div class="card">
+            <div class="card-title" id="chart-title">Laporan Grafik</div>
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <h4>Pemasukan vs Pengeluaran</h4>
+                    <div class="chart-container">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h4>Pengeluaran Per Kategori</h4>
+                    <div class="chart-container">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tambah / Edit Transaksi -->
+        <div class="card">
+            <div class="card-title" id="form-trans-title">➕ Tambah Transaksi Baru</div>
+            <form id="trans-form" class="form-inline" onsubmit="saveTransaction(event)">
+                <input type="hidden" id="trans-id">
+                <input type="date" id="trans-date" required>
+                <select id="trans-type" required>
+                    <option value="Masuk">Pemasukan</option>
+                    <option value="Keluar">Pengeluaran</option>
+                </select>
+                <input type="number" id="trans-amount" placeholder="Jumlah (Rp)" required>
+                <select id="trans-category" required>
+                    <option value="" disabled selected>Pilih Kategori</option>
+                    <option value="Belanja">Belanja</option>
+                    <option value="Makanan & Minuman">Makanan & Minuman</option>
+                    <option value="Transportasi">Transportasi</option>
+                    <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                    <option value="Gaji & Pendapatan">Gaji & Pendapatan</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+                <input type="text" id="trans-desc" placeholder="Keterangan" required>
+                <button type="submit" class="btn-success" id="btn-save-trans">Simpan Transaksi</button>
+            </form>
+        </div>
+
+        <!-- Riwayat Transaksi -->
+        <div class="card">
+            <div class="card-title">Riwayat Transaksi</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Jenis</th>
+                        <th>Kategori</th>
+                        <th>Jumlah</th>
+                        <th>Keterangan</th>
+                        <th style="width: 120px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="trans-table-body"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        initDashboard();
+    </script>
+</body>
+</html>

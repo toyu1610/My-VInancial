@@ -3,107 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My-VInancial - Dashboard</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #121212; color: #fff; padding: 20px; }
-        .container { max-width: 500px; margin: 40px auto; background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        h2 { color: #00ffaa; }
-        .logout-btn { background: #ff4444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .logout-btn:hover { background: #cc0000; }
-        .form-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        input, select { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: #fff; }
-        .add-btn { background: #00ffaa; color: #000; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        ul { list-style: none; }
-        li { background: #2a2a2a; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        li.masuk { border-left: 4px solid #00ffaa; }
-        li.keluar { border-left: 4px solid #ff5555; }
-        .total { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 1.2rem; }
-        .total span { color: #00ffaa; font-weight: bold; }
-    </style>
+    <title>Aplikasi Catatan Keuangan</title>
+    <!-- CSS External -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div>
-                <h2>My-VInancial</h2>
-                <p style="font-size: 0.9rem; color: #aaa;">Halo, <span id="user-name">User</span>!</p>
-            </div>
-            <button class="logout-btn" onclick="logout()">Logout</button>
-        </header>
 
-        <div class="total">
-            Saldo: <span id="balance">Rp 0</span>
+    <!-- Header Top Bar -->
+    <div class="top-bar">
+        <h1>Aplikasi Catatan Keuangan</h1>
+        <div class="user-info">
+            Halo, <strong id="logged-user">Muhammad Abdullah Davino</strong> | 
+            <button class="btn-logout" onclick="logout()">Logout</button>
         </div>
-
-        <form id="transactionForm" class="form-group">
-            <input type="text" id="desc" placeholder="Keterangan transaksi" required>
-            <input type="number" id="amount" placeholder="Jumlah (Rp)" required>
-            <select id="type">
-                <option value="masuk">Pemasukan (+)</option>
-                <option value="keluar">Pengeluaran (-)</option>
-            </select>
-            <button type="submit" class="add-btn">Tambah Transaksi</button>
-        </form>
-
-        <h3>Catatan Keuangan</h3>
-        <ul id="transactionList" style="margin-top: 10px;"></ul>
     </div>
 
-    <script>
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (!currentUser) {
-            window.location.href = 'login.html';
-        } else {
-            document.getElementById('user-name').innerText = currentUser.username;
-        }
+    <div class="container">
 
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = 'login.html';
-        }
+        <!-- Filter Arsip Bulan -->
+        <div class="card">
+            <div class="filter-bar">
+                <span>📁 Pilih Arsip Bulan:</span>
+                <select id="filter-month" onchange="renderAll()">
+                    <option value="0">Januari</option>
+                    <option value="1">Februari</option>
+                    <option value="2">Maret</option>
+                    <option value="3">April</option>
+                    <option value="4">Mei</option>
+                    <option value="5">Juni</option>
+                    <option value="6">Juli</option>
+                    <option value="7">Agustus</option>
+                    <option value="8">September</option>
+                    <option value="9">Oktober</option>
+                    <option value="10">November</option>
+                    <option value="11">Desember</option>
+                </select>
+                <select id="filter-year" onchange="renderAll()">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+        </div>
 
-        const storageKey = 'transactions_' + currentUser?.username;
-        let transactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        <!-- Daftar Target Barang -->
+        <div class="card">
+            <div class="card-title">🎯 Daftar Target Barang</div>
+            <form id="target-form" class="form-inline" onsubmit="addTarget(event)">
+                <input type="text" id="target-name" placeholder="Nama Barang Target" required>
+                <input type="number" id="target-price" placeholder="Estimasi Harga (Rp)" required>
+                <input type="date" id="target-date" required>
+                <button type="submit" class="btn-success">+ Tambah Target</button>
+            </form>
 
-        function updateUI() {
-            const list = document.getElementById('transactionList');
-            const balanceEl = document.getElementById('balance');
-            list.innerHTML = '';
-            let total = 0;
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Status</th>
+                        <th>Nama Barang Target</th>
+                        <th>Estimasi Harga</th>
+                        <th>Target Tanggal</th>
+                        <th style="width: 80px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="target-table-body"></tbody>
+            </table>
+        </div>
 
-            transactions.forEach((t) => {
-                const li = document.createElement('li');
-                li.className = t.type;
-                const val = t.type === 'masuk' ? t.amount : -t.amount;
-                total += val;
+        <!-- Ringkasan Saldo -->
+        <div class="card">
+            <div class="card-title" id="summary-title">Ringkasan Saldo (September 2026)</div>
+            <p style="margin-bottom: 6px;">Pemasukan Bulan Ini: <strong class="text-masuk" id="sum-pemasukan">Rp 0,00</strong></p>
+            <p style="margin-bottom: 6px;">Pengeluaran Bulan Ini: <strong class="text-keluar" id="sum-pengeluaran">Rp 0,00</strong></p>
+            <p>Total Saldo Bersih: <strong id="sum-total">Rp 0,00</strong></p>
+        </div>
 
-                li.innerHTML = `
-                    <span>${t.desc}</span>
-                    <span>${t.type === 'masuk' ? '+' : '-'} Rp ${t.amount.toLocaleString('id-ID')}</span>
-                `;
-                list.appendChild(li);
-            });
+        <!-- Laporan Grafik -->
+        <div class="card">
+            <div class="card-title" id="chart-title">Laporan Grafik (September 2026)</div>
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <h4>Pemasukan vs Pengeluaran</h4>
+                    <div class="chart-container">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h4>Pengeluaran Per Kategori</h4>
+                    <div class="chart-container">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            balanceEl.innerText = 'Rp ' + total.toLocaleString('id-ID');
-        }
+        <!-- Tambah / Edit Transaksi -->
+        <div class="card">
+            <div class="card-title" id="form-trans-title">➕ Tambah Transaksi Baru</div>
+            <form id="trans-form" class="form-inline" onsubmit="saveTransaction(event)">
+                <input type="hidden" id="trans-id">
+                <input type="date" id="trans-date" required>
+                <select id="trans-type" required>
+                    <option value="Masuk">Pemasukan</option>
+                    <option value="Keluar">Pengeluaran</option>
+                </select>
+                <input type="number" id="trans-amount" placeholder="Jumlah (Rp)" required>
+                <select id="trans-category" required>
+                    <option value="" disabled selected>Pilih Kategori</option>
+                    <option value="Belanja">Belanja</option>
+                    <option value="Makanan & Minuman">Makanan & Minuman</option>
+                    <option value="Transportasi">Transportasi</option>
+                    <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                    <option value="Gaji & Pendapatan">Gaji & Pendapatan</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+                <input type="text" id="trans-desc" placeholder="Keterangan" required>
+                <button type="submit" class="btn-success" id="btn-save-trans">Simpan Transaksi</button>
+            </form>
+        </div>
 
-        document.getElementById('transactionForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const desc = document.getElementById('desc').value;
-            const amount = parseFloat(document.getElementById('amount').value);
-            const type = document.getElementById('type').value;
+        <!-- Riwayat Transaksi -->
+        <div class="card">
+            <div class="card-title">Riwayat Transaksi</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Jenis</th>
+                        <th>Kategori</th>
+                        <th>Jumlah</th>
+                        <th>Keterangan</th>
+                        <th style="width: 120px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="trans-table-body"></tbody>
+            </table>
+        </div>
 
-            transactions.push({ desc, amount, type });
-            localStorage.setItem(storageKey, JSON.stringify(transactions));
+    </div>
 
-            document.getElementById('desc').value = '';
-            document.getElementById('amount').value = '';
-            updateUI();
-        });
-
-        updateUI();
-    </script>
+    <!-- JavaScript External -->
+    <script src="script.js"></script>
 </body>
 </html>

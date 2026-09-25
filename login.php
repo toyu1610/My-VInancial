@@ -1,79 +1,57 @@
 <?php
 session_start();
-include 'db.php';
-
-// Jika sudah login, alihkan ke index.php
-if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
-    header("Location: index.php");
-    exit();
-}
+require_once 'db.php';
 
 $error = '';
 
-if (isset($_POST['login'])) {
-    $username = trim($_POST['username']);
-    $password = md5($_POST['password']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ? AND password = ?");
-    $stmt->bind_param("ss", $username, $password);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    if (!empty($username) && !empty($password)) {
+        $stmt = mysqli_prepare($conn, "SELECT id, username, password FROM users WHERE username = ?");
+        mysqli_stmt_bind_param($stmt, "s", $username);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
 
-    if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        $_SESSION['login'] = true;
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
-        
-        header("Location: index.php");
-        exit();
+        if ($row = mysqli_fetch_assoc($result)) {
+            if (password_verify($password, $row['password'])) {
+                $_SESSION['user_id'] = $row['id'];
+                $_SESSION['username'] = $row['username'];
+                header('Location: index.php');
+                exit;
+            } else {
+                $error = 'Password salah!';
+            }
+        } else {
+            $error = 'Username tidak ditemukan!';
+        }
     } else {
-        $error = "Username atau password salah!";
+        $error = 'Harap isi semua kolom!';
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Catatan Keuangan</title>
+    <title>Login - My-VInancial</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 320px; }
-        .login-card h3 { text-align: center; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-login { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-        .btn-login:hover { background: #0056b3; }
-        .error { color: red; text-align: center; margin-bottom: 15px; font-size: 14px; }
-        .register-link { text-align: center; margin-top: 15px; font-size: 14px; }
-        .register-link a { color: #007bff; text-decoration: none; font-weight: bold; }
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; display: grid; place-items: center; min-height: 100vh; margin: 0; }
+        form { background: #1e1e1e; padding: 30px; border-radius: 8px; width: 300px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 10px; margin: 8px 0; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #00ffaa; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: #000; margin-top: 10px; }
+        .error { color: #ff5555; font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <h3>Login Keuangan</h3>
-        <?php if ($error): ?>
-            <div class="error"><?= $error ?></div>
-        <?php endif; ?>
-        <form method="POST">
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" placeholder="Masukkan Username" required autofocus>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Masukkan Password" required>
-            </div>
-            <button type="submit" name="login" class="btn-login">Masuk</button>
-        </form>
-
-        <!-- TAUTAN REGISTRASI AKUN -->
-        <div class="register-link">
-            Belum punya akun? <a href="register.php">Daftar di sini</a>
-        </div>
-    </div>
+    <form method="POST">
+        <h2>Login</h2>
+        <?php if ($error): ?><p class="error"><?php echo $error; ?></p><?php endif; ?>
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Masuk</button>
+        <p>Belum punya akun? <a href="register.php" style="color: #00ffaa;">Daftar</a></p>
+    </form>
 </body>
 </html>

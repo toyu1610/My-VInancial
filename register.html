@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - My-VInancial</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #121212; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: #1e1e1e; padding: 2.5rem; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        h2 { margin-bottom: 1.5rem; text-align: center; color: #00ffaa; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: #fff; outline: none; }
+        button { width: 100%; padding: 12px; background: #00ffaa; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: #000; margin-top: 12px; font-size: 1rem; }
+        button:hover { background: #00cc88; }
+        p { margin-top: 1rem; text-align: center; font-size: 0.9rem; color: #aaa; }
+        a { color: #00ffaa; text-decoration: none; }
+        .msg { font-size: 0.85rem; margin-top: 8px; text-align: center; }
+        .error { color: #ff5555; }
+        .success { color: #55ff55; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Daftar Akun</h2>
+        <div id="msg" class="msg"></div>
+        <form id="registerForm">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Daftar</button>
+        </form>
+        <p>Sudah punya akun? <a href="login.html">Login</a></p>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value;
+            const msgBox = document.getElementById('msg');
+            let users = JSON.parse(localStorage.getItem('users') || '[]');
+
+            if (users.some(u => u.username === user)) {
+                msgBox.innerText = 'Username sudah terdaftar!';
+                msgBox.className = 'msg error';
+                return;
+            }
+
+            users.push({ username: user, password: pass });
+            localStorage.setItem('users', JSON.stringify(users));
+            msgBox.innerText = 'Pendaftaran berhasil! Mengalihkan ke halaman login...';
+            msgBox.className = 'msg success';
+            setTimeout(() => window.location.href = 'login.html', 1500);
+        });
+    </script>
+</body>
+</html>
